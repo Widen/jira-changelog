@@ -1,0 +1,48 @@
+version = '0.0.1'
+group = 'com.widen'
+
+
+apply plugin: 'idea'
+apply plugin: 'groovy'
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+repositories {
+    mavenCentral()
+}
+
+configurations.all {
+    dependencies {
+        compile group: 'org.codehaus.groovy', name: 'groovy', version: '2.4.3'
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+tasks.idea {
+    dependsOn = [ cleanIdeaModule, ideaModule ]
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allSource
+}
+
+sourceSets {
+    main {
+        java { srcDirs = [] }
+        groovy {
+            srcDirs = files('src')
+            resources.srcDirs = files('src')
+        }
+    }
+
+    test {
+        groovy.srcDirs = files('test')
+        resources.srcDirs = files('test')
+    }
+}
