@@ -1,5 +1,6 @@
 package com.widen.changelog
 
+import groovy.transform.ToString
 import org.apache.commons.cli.*
 
 class CommitNoteParser
@@ -26,6 +27,9 @@ class CommitNoteParser
         try {
             tempRepoLocation = app.cloneRepo(options.u)
             List<String> logsByLine = app.getRawLogs(options.f, options.l, tempRepoLocation)
+            List<CommitMessage> commitMessages = app.parseCommits(logsByLine)
+            println commitMessages
+
         }
         catch (Error er) {
             er.printStackTrace()
@@ -70,4 +74,32 @@ class CommitNoteParser
 
 		return sout.toString().split("\\n") as List
 	}
+
+    private List<CommitMessage> parseCommits(List<String> rawCommits) {
+        List<CommitMessage> parsedMessages = []
+
+        rawCommits.each { String rawCommit ->
+            def matcher = rawCommit =~ /^(.+)\s+(feat|fix|docs|style|refactor|perf|test|chore|customer)\((.+)\):\s*(.+\.)(\s\w+-\d+.+?)$/
+            if (matcher) {
+                parsedMessages << new CommitMessage(
+                    author: matcher[0][1],
+                    type: matcher[0][2],
+                    module: matcher[0][3],
+                    message: matcher[0][4],
+                    jiraCases: matcher[0][5].split() as Set
+                )
+            }
+        }
+
+        return parsedMessages
+    }
+
+    @ToString
+    private static class CommitMessage {
+        String author
+        String type
+        String module
+        String message
+        Set<String> jiraCases = []
+    }
 }
