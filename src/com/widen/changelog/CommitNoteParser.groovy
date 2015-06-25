@@ -1,7 +1,5 @@
 package com.widen.changelog
-
 import groovy.transform.ToString
-import org.apache.commons.cli.*
 
 class CommitNoteParser
 {
@@ -22,6 +20,11 @@ class CommitNoteParser
 		if (!options) {
 			return
 		}
+
+        if (options.h) {
+            cli.usage()
+            return
+        }
 
         String tempRepoLocation
         try {
