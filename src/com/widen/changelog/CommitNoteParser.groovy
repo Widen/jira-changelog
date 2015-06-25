@@ -4,7 +4,6 @@ import org.apache.commons.cli.*
 
 class CommitNoteParser
 {
-	// TODO temp fetch of repo for git log
 	static void main(String[] args) throws Exception {
 		CommitNoteParser app = new CommitNoteParser()
 		CliBuilder cli = new CliBuilder(usage: '-f [from-tag] -t [to-tag]')
