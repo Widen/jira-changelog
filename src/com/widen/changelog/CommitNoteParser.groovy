@@ -1,25 +1,35 @@
 package com.widen.changelog
 import groovy.transform.ToString
+import net.rcarz.jiraclient.BasicCredentials
+import net.rcarz.jiraclient.Issue
+import net.rcarz.jiraclient.JiraClient
+import net.rcarz.jiraclient.JiraException
+import org.apache.commons.cli.*
 
 class CommitNoteParser
 {
-	static void main(String[] args) throws Exception {
-		CommitNoteParser app = new CommitNoteParser()
-		CliBuilder cli = new CliBuilder(usage: '-f [from-tag] -t [to-tag]')
-		cli.with {
-			h longOpt: 'help', 'Show usage info'
-			f longOpt: 'firstTag', args: 1, 'First tag in changelog range'
-			l longOpt: 'lastTag', args: 1, 'Last tag in changelog range'
+    static final String COMMIT_DELIMITER = "-----ENDOFCOMMIT-----";
+
+    static void main(String[] args) throws Exception {
+        CommitNoteParser app = new CommitNoteParser()
+        CliBuilder cli = new CliBuilder(usage: '-f [from-tag] -t [to-tag]')
+        cli.with {
+            h longOpt: 'help', 'Show usage info'
+            f longOpt: 'firstTag', args: 1, 'First tag in changelog range'
+            l longOpt: 'lastTag', args: 1, 'Last tag in changelog range'
             u longOpt: 'repoUrl', args: 1, 'Git repository URL'
-		}
+            j longOpt: 'jiraUrl', args: 1, 'JIRA URL'
+            ju longOpt: 'jiraUser', args: 1, 'JIRA username'
+            jp longOpt: 'jiraPass', args: 1, 'JIRA password'
+        }
 
-		def options = cli.parse(args)
+        def options = cli.parse(args)
 
-		// TODO assume lack of f/t options indicates: -f LATEST_TAG -t SECOND_LATEST_TAG
+        // TODO assume lack of f/t options indicates: -f LATEST_TAG -t SECOND_LATEST_TAG
 
-		if (!options) {
-			return
-		}
+        if (!options) {
+            return
+        }
 
         if (options.h) {
             cli.usage()
@@ -29,10 +39,18 @@ class CommitNoteParser
         String tempRepoLocation
         try {
             tempRepoLocation = app.cloneRepo(options.u)
-            List<String> logsByLine = app.getRawLogs(options.f, options.l, tempRepoLocation)
-            List<CommitMessage> commitMessages = app.parseCommits(logsByLine)
-            println commitMessages
 
+            println "[gathering commit messages at repo cloned to $tempRepoLocation...]"
+            List<String> totalCommits = app.getRawLogs(options.f, options.l, tempRepoLocation)
+            println "[...gathered $totalCommits.size total commits]"
+
+            println "[parsing $totalCommits.size commit messages...]"
+            List<CommitMessage> commitMessages = app.parseCommits(totalCommits)
+            println "[...found $commitMessages.size valid commit messages]"
+
+            println "[looking up JIRA cases for $commitMessages.size valid commit messages...]"
+            List<ParentJiraCase> jiraCases = app.getJiraCases(commitMessages, options.j, options.ju, options.jp)
+            println "[...$jiraCases.size top-level JIRA cases located]"
         }
         catch (Error er) {
             er.printStackTrace()
@@ -42,7 +60,7 @@ class CommitNoteParser
                 new File(tempRepoLocation).deleteDir()
             }
         }
-	}
+    }
 
     private String cloneRepo(String url) {
         String tempDir = System.getProperty("java.io.tmpdir");
@@ -52,49 +70,76 @@ class CommitNoteParser
             throw RuntimeException("Unable to parse repo name from url!")
         }
 
-        println "[cloning git repo into $tempDir]"
-
         executeCmd("git clone $url", tempDir)
-
-        println "[cloned $repoName]"
+        println "[...cloned $repoName]"
 
         return tempDir + repoName
     }
 
-	private List<String> getRawLogs(firstTag, lastTag, tempRepoLocation) {
-        println "[looking at repo cloned to $tempRepoLocation]"
-        return executeCmd("git log --no-merges --pretty=format:%an%x09%s " + lastTag + ".." + firstTag, tempRepoLocation)
-	}
+    private List<String> getRawLogs(firstTag, lastTag, tempRepoLocation) {
+        return executeCmd("git log --no-merges --pretty=format:%an%x09%B%n$COMMIT_DELIMITER $lastTag..$firstTag", tempRepoLocation, COMMIT_DELIMITER)
+    }
 
-	private List<String> executeCmd(String cmd, String workingDir) {
-		println cmd
-		def sout = new StringBuilder(), serr = new StringBuilder()
+    private List<String> executeCmd(String cmd, String workingDir, String delim="\\n") {
+//		println cmd
+        def sout = new StringBuilder(), serr = new StringBuilder()
 
-		def proc = cmd.execute(null, new File(workingDir))
-		proc.consumeProcessOutput(sout, serr)
-		proc.waitFor()
-		println "out> $sout err> $serr"
+        def proc = cmd.execute(null, new File(workingDir))
+        proc.consumeProcessOutput(sout, serr)
+        proc.waitFor()
+//		println "out> $sout err> $serr"
 
-		return sout.toString().split("\\n") as List
-	}
+        return sout.toString().split(delim) as List
+    }
 
     private List<CommitMessage> parseCommits(List<String> rawCommits) {
         List<CommitMessage> parsedMessages = []
 
         rawCommits.each { String rawCommit ->
-            def matcher = rawCommit =~ /^(.+)\s+(feat|fix|docs|style|refactor|perf|test|chore|customer)\((.+)\):\s*(.+\.)(\s\w+-\d+.+?)$/
+            def matcher = rawCommit.replaceAll("\n", " ") =~ /^(.+)\s+(feat|fix|docs|style|refactor|perf|test|chore|customer)\((.+)\):\s*(.+\.)(\s*\w+-\d+.+?)$/
             if (matcher) {
                 parsedMessages << new CommitMessage(
-                    author: matcher[0][1],
-                    type: matcher[0][2],
-                    module: matcher[0][3],
-                    message: matcher[0][4],
-                    jiraCases: matcher[0][5].split() as Set
+                        author: matcher[0][1],
+                        type: matcher[0][2],
+                        module: matcher[0][3],
+                        message: matcher[0][4],
+                        jiraCases: matcher[0][5].split() as Set
                 )
             }
         }
 
         return parsedMessages
+    }
+
+    private List<ParentJiraCase> getJiraCases(List<CommitMessage> commitMessages, String url, String user, String pass) {
+        BasicCredentials credentials = new BasicCredentials(user, pass)
+        JiraClient jiraClient = new JiraClient(url, credentials)
+        Map<String, ParentJiraCase> parentJiraCaseMap = [:]
+
+        commitMessages.each { CommitMessage commitMessage ->
+            commitMessage.jiraCases.each { String jiraCaseId ->
+                try {
+                    Issue issue = jiraClient.getIssue(jiraCaseId)
+                    while (issue.getParent()) {
+                        issue = issue.getParent()
+                    }
+
+                    ParentJiraCase parentJiraCase = parentJiraCaseMap.get(issue.getId())
+                    if (!parentJiraCase) {
+                        parentJiraCase = new ParentJiraCase(issue: issue)
+                    }
+
+                    parentJiraCase.commitMessages.add(commitMessage)
+
+                    parentJiraCaseMap.put(issue.getId(), parentJiraCase)
+                }
+                catch (JiraException ex) {
+                    println "Unable to lookup case $jiraCaseId"
+                }
+            }
+        }
+
+        return parentJiraCaseMap.values() as List
     }
 
     @ToString
@@ -104,5 +149,12 @@ class CommitNoteParser
         String module
         String message
         Set<String> jiraCases = []
+    }
+
+    @ToString
+    // TODO record Epic link (if available)
+    private static class ParentJiraCase {
+        Issue issue
+        List<CommitMessage> commitMessages = []
     }
 }
