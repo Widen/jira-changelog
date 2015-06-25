@@ -120,7 +120,7 @@ class CommitNoteParser
             commitMessage.jiraCases.each { String jiraCaseId ->
                 try {
                     Issue issue = jiraClient.getIssue(jiraCaseId)
-                    while (issue.getParent()) {
+                    while (issue.parent && issue.parent.issueType.name != "Epic") {
                         issue = issue.getParent()
                     }
 
@@ -152,7 +152,6 @@ class CommitNoteParser
     }
 
     @ToString
-    // TODO record Epic link (if available)
     private static class ParentJiraCase {
         Issue issue
         List<CommitMessage> commitMessages = []
