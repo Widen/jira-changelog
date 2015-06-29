@@ -1,5 +1,4 @@
 package com.widen.changelog
-import groovy.transform.ToString
 import net.rcarz.jiraclient.BasicCredentials
 import net.rcarz.jiraclient.Issue
 import net.rcarz.jiraclient.JiraClient
@@ -39,20 +38,31 @@ class CommitNoteParser
             return
         }
 
+        app.getJiraIssuesAndCommits(new ParserOptions(
+                repoUrl: options.u,
+                firstTag: options.f,
+                lastTag: options.l,
+                jiraUrl: options.j,
+                jiraUser: options.ju,
+                jiraPass: options.jp
+        ))
+    }
+
+    public getJiraIssuesAndCommits(ParserOptions options) {
         String tempRepoLocation
         try {
-            tempRepoLocation = app.cloneRepo(options.u)
+            tempRepoLocation = cloneRepo(options.repoUrl)
 
             LOGGER.info("gathering commit messages at repo cloned to $tempRepoLocation...")
-            List<String> totalCommits = app.getRawLogs(options.f, options.l, tempRepoLocation)
+            List<String> totalCommits = getRawLogs(options.firstTag, options.lastTag, tempRepoLocation)
             LOGGER.info("...gathered $totalCommits.size total commits")
 
             LOGGER.info("parsing $totalCommits.size commit messages...")
-            List<CommitMessage> commitMessages = app.parseCommits(totalCommits)
+            List<CommitMessage> commitMessages = parseCommits(totalCommits)
             LOGGER.info("...found $commitMessages.size valid commit messages")
 
             LOGGER.info("looking up JIRA cases for $commitMessages.size valid commit messages...")
-            List<ParentJiraCase> jiraCases = app.getJiraCases(commitMessages, options.j, options.ju, options.jp)
+            List<ParentJiraIssue> jiraCases = getJiraCases(commitMessages, options.jiraUrl, options.jiraUser, options.jiraPass)
             LOGGER.info("...$jiraCases.size top-level JIRA cases located")
         }
         catch (Error er) {
@@ -73,6 +83,7 @@ class CommitNoteParser
             throw RuntimeException("Unable to parse repo name from url!")
         }
 
+        LOGGER.info("cloning $repoName...")
         executeCmd("git clone $url", tempDir)
         LOGGER.info("...cloned $repoName")
 
@@ -162,10 +173,10 @@ class CommitNoteParser
         return [matcher[0][1], ids]
     }
 
-    private List<ParentJiraCase> getJiraCases(List<CommitMessage> commitMessages, String url, String user, String pass) {
+    private List<ParentJiraIssue> getJiraCases(List<CommitMessage> commitMessages, String url, String user, String pass) {
         BasicCredentials credentials = new BasicCredentials(user, pass)
         JiraClient jiraClient = new JiraClient(url, credentials)
-        Map<String, ParentJiraCase> parentJiraCaseMap = [:]
+        Map<String, ParentJiraIssue> parentJiraCaseMap = [:]
         Map<String, String> childParentRelations = [:]
         Set<String> retrievedCases = []
 
@@ -185,14 +196,14 @@ class CommitNoteParser
                             issue = issue.getParent()
                         }
 
-                        ParentJiraCase parentJiraCase = parentJiraCaseMap.get(issue.getKey())
-                        if (!parentJiraCase) {
-                            parentJiraCase = new ParentJiraCase(issue: issue)
+                        ParentJiraIssue parentJiraIssue = parentJiraCaseMap.get(issue.getKey())
+                        if (!parentJiraIssue) {
+                            parentJiraIssue = new ParentJiraIssue(issue: issue)
                         }
 
-                        parentJiraCase.commitMessages.add(commitMessage)
+                        parentJiraIssue.commitMessages.add(commitMessage)
 
-                        parentJiraCaseMap.put(issue.getKey(), parentJiraCase)
+                        parentJiraCaseMap.put(issue.getKey(), parentJiraIssue)
                         retrievedCases.addAll([jiraCaseId, issue.getKey()])
                         childParentRelations.put(jiraCaseId, issue.getKey())
                     }
@@ -204,22 +215,5 @@ class CommitNoteParser
         }
 
         return parentJiraCaseMap.values() as List
-    }
-
-    @ToString
-    private static class CommitMessage {
-        String author
-        String body
-        String hash
-        Set<String> jiraCases = []
-        String module
-        String subject
-        String type
-    }
-
-    @ToString
-    private static class ParentJiraCase {
-        List<CommitMessage> commitMessages = []
-        Issue issue
     }
 }
