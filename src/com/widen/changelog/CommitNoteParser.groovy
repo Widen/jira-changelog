@@ -48,7 +48,14 @@ class CommitNoteParser
         ))
     }
 
-    public getJiraIssuesAndCommits(ParserOptions options) {
+    /**
+     * Parses all commit messages between the two tags specified in the options and generates a List of
+     * top-level/parent JIRA cases along with all associated commit messages.
+     *
+     * @param options
+     * @return List of all top-level issues (not epics) and their associated commits
+     */
+    public List<ParentJiraIssue> getJiraIssuesAndCommits(ParserOptions options) {
         String tempRepoLocation
         try {
             tempRepoLocation = cloneRepo(options.repoUrl)
@@ -64,6 +71,8 @@ class CommitNoteParser
             LOGGER.info("looking up JIRA cases for $commitMessages.size valid commit messages...")
             List<ParentJiraIssue> jiraCases = getJiraCases(commitMessages, options.jiraUrl, options.jiraUser, options.jiraPass)
             LOGGER.info("...$jiraCases.size top-level JIRA cases located")
+
+            return jiraCases
         }
         catch (Error er) {
             er.printStackTrace()
