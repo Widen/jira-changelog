@@ -6,11 +6,14 @@ import net.rcarz.jiraclient.JiraClient
 import net.rcarz.jiraclient.JiraException
 import org.apache.commons.cli.*
 
+import java.util.logging.Logger
+
 class CommitNoteParser
 {
-    static final String COMMIT_DELIMITER = "-----ENDOFCOMMIT-----";
+    private static final Logger LOGGER = Logger.getLogger(CommitNoteParser.class.name)
+    private static final String COMMIT_DELIMITER = "-----ENDOFCOMMIT-----";
 
-    static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
         CommitNoteParser app = new CommitNoteParser()
         CliBuilder cli = new CliBuilder(usage: '-f [from-tag] -t [to-tag]')
         cli.with {
@@ -40,17 +43,17 @@ class CommitNoteParser
         try {
             tempRepoLocation = app.cloneRepo(options.u)
 
-            println "[gathering commit messages at repo cloned to $tempRepoLocation...]"
+            LOGGER.info("gathering commit messages at repo cloned to $tempRepoLocation...")
             List<String> totalCommits = app.getRawLogs(options.f, options.l, tempRepoLocation)
-            println "[...gathered $totalCommits.size total commits]"
+            LOGGER.info("...gathered $totalCommits.size total commits")
 
-            println "[parsing $totalCommits.size commit messages...]"
+            LOGGER.info("parsing $totalCommits.size commit messages...")
             List<CommitMessage> commitMessages = app.parseCommits(totalCommits)
-            println "[...found $commitMessages.size valid commit messages]"
+            LOGGER.info("...found $commitMessages.size valid commit messages")
 
-            println "[looking up JIRA cases for $commitMessages.size valid commit messages...]"
+            LOGGER.info("looking up JIRA cases for $commitMessages.size valid commit messages...")
             List<ParentJiraCase> jiraCases = app.getJiraCases(commitMessages, options.j, options.ju, options.jp)
-            println "[...$jiraCases.size top-level JIRA cases located]"
+            LOGGER.info("...$jiraCases.size top-level JIRA cases located")
         }
         catch (Error er) {
             er.printStackTrace()
@@ -71,7 +74,7 @@ class CommitNoteParser
         }
 
         executeCmd("git clone $url", tempDir)
-        println "[...cloned $repoName]"
+        LOGGER.info("...cloned $repoName")
 
         return tempDir + repoName
     }
@@ -82,13 +85,13 @@ class CommitNoteParser
     }
 
     private List<String> executeCmd(def cmd, String workingDir, String delim="\\n") {
-        println cmd
+        LOGGER.fine("Executing command: $cmd")
         def sout = new StringBuilder(), serr = new StringBuilder()
 
         def proc = cmd.execute(null, new File(workingDir))
         proc.consumeProcessOutput(sout, serr)
         proc.waitForProcessOutput(sout, serr)
-        println sout
+        LOGGER.finer(sout.toString())
         return sout.toString().split(delim) as List
     }
 
@@ -194,7 +197,7 @@ class CommitNoteParser
                         childParentRelations.put(jiraCaseId, issue.getKey())
                     }
                     catch (JiraException ex) {
-                        System.err.println "Unable to lookup case $jiraCaseId, commit $commitMessage"
+                        LOGGER.warning("Unable to lookup case $jiraCaseId, commit $commitMessage")
                     }
                 }
             }
