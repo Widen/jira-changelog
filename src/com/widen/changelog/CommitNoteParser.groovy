@@ -77,18 +77,18 @@ class CommitNoteParser
     }
 
     private List<String> getRawLogs(firstTag, lastTag, tempRepoLocation) {
-        return executeCmd("git log --no-merges --pretty=format:%an%x09%B%n$COMMIT_DELIMITER $lastTag..$firstTag", tempRepoLocation, COMMIT_DELIMITER)
+        executeCmd(["bash", "-c", "git --no-pager log --no-merges --pretty=format:HASH:%H%nAUTHOR:%an%nSUBJECT:%s%nBODY:%b%n$COMMIT_DELIMITER $lastTag..$firstTag > jira-changelog.txt"], tempRepoLocation)
+        return new File(tempRepoLocation + '/jira-changelog.txt').text.split(COMMIT_DELIMITER) as List
     }
 
-    private List<String> executeCmd(String cmd, String workingDir, String delim="\\n") {
-//		println cmd
+    private List<String> executeCmd(def cmd, String workingDir, String delim="\\n") {
+        println cmd
         def sout = new StringBuilder(), serr = new StringBuilder()
 
         def proc = cmd.execute(null, new File(workingDir))
         proc.consumeProcessOutput(sout, serr)
-        proc.waitFor()
-//		println "out> $sout err> $serr"
-
+        proc.waitForProcessOutput(sout, serr)
+        println sout
         return sout.toString().split(delim) as List
     }
 
@@ -96,19 +96,67 @@ class CommitNoteParser
         List<CommitMessage> parsedMessages = []
 
         rawCommits.each { String rawCommit ->
-            def matcher = rawCommit.replaceAll("\n", " ") =~ /^(.+)\s+(feat|fix|docs|style|refactor|perf|test|chore|customer)\((.+)\):\s*(.+\.)(\s*\w+-\d+.+?)$/
+            def matcher = rawCommit =~ /(?s)HASH:(.+)\nAUTHOR:(.+)\nSUBJECT:(feat|fix|docs|style|refactor|perf|test|chore|customer)\((.+)\):\s*(.+)\nBODY:(.*)/
             if (matcher) {
+                String subject, body
+                Set<String> subjectIds, bodyIds
+                Set<String> ids = []
+
+                (subject, subjectIds) = parseCommitSubject(matcher[0][5])
+                if (subjectIds) {
+                    ids.addAll(subjectIds)
+                }
+
+                (body, bodyIds) = parseCommitBody(matcher[0][6])
+                if (bodyIds) {
+                    ids.addAll(bodyIds)
+                }
+
                 parsedMessages << new CommitMessage(
-                        author: matcher[0][1],
-                        type: matcher[0][2],
-                        module: matcher[0][3],
-                        message: matcher[0][4],
-                        jiraCases: matcher[0][5].split() as Set
+                        hash: matcher[0][1],
+                        author: matcher[0][2],
+                        type: matcher[0][3],
+                        module: matcher[0][4],
+                        subject: subject,
+                        body: body,
+                        jiraCases: ids
                 )
             }
         }
 
         return parsedMessages
+    }
+
+    def parseCommitSubject(String subject)
+    {
+        Set<String> ids
+
+        def matcher = subject.replaceAll("\\n", "").trim() =~ /^(.*?)([A-Z0-9_]+-\d+)?$/
+
+        if (matcher[0][2]) {
+            ids = matcher[0][2].split(/\s+/) as Set
+        }
+
+        return [matcher[0][1], ids]
+    }
+
+    def parseCommitBody(String body)
+    {
+        Set<String> ids
+
+        body = body.trim()
+
+        if (body.length() == 0) {
+            return [null, null]
+        }
+
+        def matcher = body =~ /(?s)^(.*?)((?:[A-Z0-9]+\-\d+\n?)+)?$/
+
+        if (matcher[0][2]) {
+            ids = matcher[0][2].split(/\s+|\n+/) as Set
+        }
+
+        return [matcher[0][1], ids]
     }
 
     private List<ParentJiraCase> getJiraCases(List<CommitMessage> commitMessages, String url, String user, String pass) {
@@ -134,7 +182,7 @@ class CommitNoteParser
                     parentJiraCaseMap.put(issue.getId(), parentJiraCase)
                 }
                 catch (JiraException ex) {
-                    println "Unable to lookup case $jiraCaseId"
+                    System.err.println "Unable to lookup case $jiraCaseId, commit $commitMessage"
                 }
             }
         }
@@ -145,15 +193,17 @@ class CommitNoteParser
     @ToString
     private static class CommitMessage {
         String author
-        String type
-        String module
-        String message
+        String body
+        String hash
         Set<String> jiraCases = []
+        String module
+        String subject
+        String type
     }
 
     @ToString
     private static class ParentJiraCase {
-        Issue issue
         List<CommitMessage> commitMessages = []
+        Issue issue
     }
 }
