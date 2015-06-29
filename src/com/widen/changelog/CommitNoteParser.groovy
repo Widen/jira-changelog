@@ -84,9 +84,9 @@ class CommitNoteParser
         }
     }
 
-    private String cloneRepo(String url) {
+    String cloneRepo(String url) {
         String tempDir = System.getProperty("java.io.tmpdir");
-        String repoName = (url =~ /\/(.+)\.git$/)[0][1]
+        String repoName = (url =~ /^(?:git@|https:\/\/).*\/(.+)\.git$/)[0][1]
 
         if (!repoName) {
             throw RuntimeException("Unable to parse repo name from url!")
@@ -104,7 +104,7 @@ class CommitNoteParser
         return new File(tempRepoLocation + '/jira-changelog.txt').text.split(COMMIT_DELIMITER) as List
     }
 
-    private List<String> executeCmd(def cmd, String workingDir, String delim="\\n") {
+    List<String> executeCmd(def cmd, String workingDir, String delim="\\n") {
         LOGGER.fine("Executing command: $cmd")
         def sout = new StringBuilder(), serr = new StringBuilder()
 
@@ -115,7 +115,7 @@ class CommitNoteParser
         return sout.toString().split(delim) as List
     }
 
-    private List<CommitMessage> parseCommits(List<String> rawCommits) {
+    List<CommitMessage> parseCommits(List<String> rawCommits) {
         List<CommitMessage> parsedMessages = []
 
         rawCommits.each { String rawCommit ->
@@ -182,7 +182,7 @@ class CommitNoteParser
         return [matcher[0][1], ids]
     }
 
-    private List<ParentJiraIssue> getJiraCases(List<CommitMessage> commitMessages, String url, String user, String pass) {
+    List<ParentJiraIssue> getJiraCases(List<CommitMessage> commitMessages, String url, String user, String pass) {
         BasicCredentials credentials = new BasicCredentials(user, pass)
         JiraClient jiraClient = new JiraClient(url, credentials)
         Map<String, ParentJiraIssue> parentJiraCaseMap = [:]
