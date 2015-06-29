@@ -163,26 +163,39 @@ class CommitNoteParser
         BasicCredentials credentials = new BasicCredentials(user, pass)
         JiraClient jiraClient = new JiraClient(url, credentials)
         Map<String, ParentJiraCase> parentJiraCaseMap = [:]
+        Map<String, String> childParentRelations = [:]
+        Set<String> retrievedCases = []
 
         commitMessages.each { CommitMessage commitMessage ->
             commitMessage.jiraCases.each { String jiraCaseId ->
-                try {
-                    Issue issue = jiraClient.getIssue(jiraCaseId)
-                    while (issue.parent && issue.parent.issueType.name != "Epic") {
-                        issue = issue.getParent()
+                if (retrievedCases.contains(jiraCaseId)) {
+                    String parentId = childParentRelations.get(jiraCaseId)
+                    if (!parentId) {
+                        parentId = jiraCaseId
                     }
-
-                    ParentJiraCase parentJiraCase = parentJiraCaseMap.get(issue.getId())
-                    if (!parentJiraCase) {
-                        parentJiraCase = new ParentJiraCase(issue: issue)
-                    }
-
-                    parentJiraCase.commitMessages.add(commitMessage)
-
-                    parentJiraCaseMap.put(issue.getId(), parentJiraCase)
+                    parentJiraCaseMap.get(parentId).commitMessages.add(commitMessage)
                 }
-                catch (JiraException ex) {
-                    System.err.println "Unable to lookup case $jiraCaseId, commit $commitMessage"
+                else {
+                    try {
+                        Issue issue = jiraClient.getIssue(jiraCaseId)
+                        while (issue.parent && issue.parent.issueType.name != "Epic") {
+                            issue = issue.getParent()
+                        }
+
+                        ParentJiraCase parentJiraCase = parentJiraCaseMap.get(issue.getKey())
+                        if (!parentJiraCase) {
+                            parentJiraCase = new ParentJiraCase(issue: issue)
+                        }
+
+                        parentJiraCase.commitMessages.add(commitMessage)
+
+                        parentJiraCaseMap.put(issue.getKey(), parentJiraCase)
+                        retrievedCases.addAll([jiraCaseId, issue.getKey()])
+                        childParentRelations.put(jiraCaseId, issue.getKey())
+                    }
+                    catch (JiraException ex) {
+                        System.err.println "Unable to lookup case $jiraCaseId, commit $commitMessage"
+                    }
                 }
             }
         }
