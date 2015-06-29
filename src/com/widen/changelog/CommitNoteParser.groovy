@@ -96,7 +96,7 @@ class CommitNoteParser
         executeCmd("git clone $url", tempDir)
         LOGGER.info("...cloned $repoName")
 
-        return tempDir + repoName
+        return new File(tempDir, repoName).path
     }
 
     private List<String> getRawLogs(firstTag, lastTag, tempRepoLocation) {

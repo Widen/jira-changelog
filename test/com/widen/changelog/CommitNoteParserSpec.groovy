@@ -11,11 +11,13 @@ class CommitNoteParserSpec extends Specification {
         System.setProperty("java.io.tmpdir", tempDir);
 
         then:
-        commitNoteParser.cloneRepo(gitUrl) == tempDir + repoName
+        commitNoteParser.cloneRepo(gitUrl) == clonedRepoPath
 
         where:
-        gitUrl                                              | repoName        | tempDir
-        "git@github.com:FineUploader/fine-uploader.git"     | "fine-uploader" | "temp/"
-        "https://github.com/FineUploader/fine-uploader.git" | "fine-uploader" | "temp/"
+        gitUrl                                              | tempDir | clonedRepoPath
+        "git@github.com:FineUploader/fine-uploader.git"     | "temp/" | "temp/fine-uploader"
+        "git@github.com:FineUploader/fine-uploader.git"     | "temp"  | "temp/fine-uploader"
+        "https://github.com/FineUploader/fine-uploader.git" | "temp/" | "temp/fine-uploader"
+        "https://github.com/FineUploader/fine-uploader.git" | "temp"  | "temp/fine-uploader"
     }
 }
