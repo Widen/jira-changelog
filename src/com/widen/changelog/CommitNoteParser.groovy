@@ -52,7 +52,7 @@ class CommitNoteParser
             output = new JSONOutput(parentIssues: issues)
         }
         else if (options.ot == "markdown") {
-            output = new MarkdownOutput(parentIssues: issues, jiraUrl: options.ju)
+            output = new MarkdownOutput(parentIssues: issues, jiraUrl: options.j)
         }
 
         if (output) {
