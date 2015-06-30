@@ -20,4 +20,13 @@ class CommitNoteParserSpec extends Specification {
         "https://github.com/FineUploader/fine-uploader.git" | "temp/" | "temp/fine-uploader"
         "https://github.com/FineUploader/fine-uploader.git" | "temp"  | "temp/fine-uploader"
     }
+
+    def "cloneRepo throws exception if passed invalid repo URL"() {
+        when:
+        CommitNoteParser commitNoteParser = new CommitNoteParser()
+        commitNoteParser.cloneRepo("http://widen.com")
+
+        then:
+        thrown MalformedURLException
+    }
 }

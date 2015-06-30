@@ -86,12 +86,13 @@ class CommitNoteParser
 
     String cloneRepo(String url) {
         String tempDir = System.getProperty("java.io.tmpdir");
-        String repoName = (url =~ /^(?:git@|https:\/\/).*\/(.+)\.git$/)[0][1]
+        def repoMatcher = url =~ /^(?:git@|https:\/\/).*\/(.+)\.git$/
 
-        if (!repoName) {
-            throw RuntimeException("Unable to parse repo name from url!")
+        if (!repoMatcher) {
+            throw new MalformedURLException("Unable to parse repo name from url!")
         }
 
+        String repoName = repoMatcher[0][1]
         LOGGER.info("cloning $repoName...")
         executeCmd("git clone $url", tempDir)
         LOGGER.info("...cloned $repoName")
