@@ -2,7 +2,7 @@ package com.widen.changelog
 
 import groovy.json.JsonBuilder
 
-class JSONOutput {
+class JsonOutput {
     List<ParentJiraIssue> parentIssues = []
 
     @Override
