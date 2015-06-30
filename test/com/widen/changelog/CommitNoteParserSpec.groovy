@@ -1,5 +1,8 @@
 package com.widen.changelog
 
+import net.rcarz.jiraclient.Issue
+import net.rcarz.jiraclient.IssueType
+import net.rcarz.jiraclient.JiraClient
 import spock.lang.Specification
 
 class CommitNoteParserSpec extends Specification {
@@ -130,6 +133,127 @@ PROJ-3142
                         subject: "hover over category menu item is a no-op",
                         type: "fix"
                 )
+        ]
+    }
+
+    def "getJiraCases"() {
+        setup:
+        def epic = Mock(Issue) {
+            getKey() >> "PROJ-0"
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Epic"
+            }
+        }
+
+        def proj1Issue = Mock(Issue) {
+            getKey() >> "PROJ-1"
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Story"
+            }
+        }
+        def proj2Issue = Mock(Issue) {
+            getKey() >> "PROJ-2"
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Story"
+            }
+        }
+        def proj3Issue = Mock(Issue) {
+            getKey() >> "PROJ-3"
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Bug"
+            }
+        }
+        def proj4Issue = Mock(Issue) {
+            getKey() >> "PROJ-4"
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Bug"
+            }
+        }
+
+        def proj123Issue = Mock(Issue) {
+            getKey() >> "PROJ-123"
+            getParent() >> proj1Issue
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Story Bug"
+            }
+        }
+        def proj124Issue = Mock(Issue) {
+            getKey() >> "PROJ-124"
+            getParent() >> proj2Issue
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Story"
+            }
+        }
+        def proj125Issue = Mock(Issue) {
+            getKey() >> "PROJ-125"
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Story"
+            }
+        }
+        def proj126Issue = Mock(Issue) {
+            getKey() >> "PROJ-126"
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Bug"
+            }
+        }
+        def proj127Issue = Mock(Issue) {
+            getKey() >> "PROJ-127"
+            getParent() >> proj2Issue
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Story"
+            }
+        }
+        def proj128Issue = Mock(Issue) {
+            getKey() >> "PROJ-128"
+            getParent() >> proj3Issue
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Story"
+            }
+        }
+        def proj129Issue = Mock(Issue) {
+            getKey() >> "PROJ-129"
+            getParent() >> proj4Issue
+            getIssueType() >> Mock(IssueType) {
+                getName() >> "Story"
+            }
+        }
+
+        def parsedCommits = [
+                new CommitMessage(subject: "1", jiraCases: ["PROJ-123"]),
+                new CommitMessage(subject: "2", jiraCases: ["PROJ-124"]),
+                new CommitMessage(subject: "3", jiraCases: ["PROJ-123"]),
+                new CommitMessage(subject: "4", jiraCases: ["PROJ-125", "PROJ-124"]),
+                new CommitMessage(subject: "5", jiraCases: ["PROJ-126"]),
+                new CommitMessage(subject: "6", jiraCases: ["PROJ-127"]),
+                new CommitMessage(subject: "7", jiraCases: ["PROJ-128"]),
+                new CommitMessage(subject: "8", jiraCases: ["PROJ-129"]),
+        ]
+
+        def jiraClient = Mock(JiraClient)
+        def commitNoteParser = new CommitNoteParser()
+        GroovyMock(JiraClient, global: true, useObjenesis: true)
+
+        when:
+        1 * new JiraClient("http://some-jira.endpoint.com", _) >> jiraClient
+
+        1 * jiraClient.getIssue("PROJ-123") >> proj123Issue
+        1 * jiraClient.getIssue("PROJ-124") >> proj124Issue
+        1 * jiraClient.getIssue("PROJ-125") >> proj125Issue
+        1 * jiraClient.getIssue("PROJ-126") >> proj126Issue
+        1 * jiraClient.getIssue("PROJ-127") >> proj127Issue
+        1 * jiraClient.getIssue("PROJ-128") >> proj128Issue
+        1 * jiraClient.getIssue("PROJ-129") >> proj129Issue
+
+        def cases = commitNoteParser.getJiraCases(parsedCommits, "http://some-jira.endpoint.com", "user", "pass")
+
+        then:
+        cases == [
+                new ParentJiraIssue(issue: proj1Issue, commitMessages: [parsedCommits[0], parsedCommits[2]]),
+                new ParentJiraIssue(issue: proj2Issue, commitMessages: [parsedCommits[1], parsedCommits[3], parsedCommits[5]]),
+                new ParentJiraIssue(issue: proj125Issue, commitMessages: [parsedCommits[3]]),
+                new ParentJiraIssue(issue: proj126Issue, commitMessages: [parsedCommits[4]]),
+                new ParentJiraIssue(issue: proj3Issue, commitMessages: [parsedCommits[6]]),
+                new ParentJiraIssue(issue: proj4Issue, commitMessages: [parsedCommits[7]]),
         ]
     }
 }
