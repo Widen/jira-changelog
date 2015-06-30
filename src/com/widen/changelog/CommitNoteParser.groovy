@@ -3,7 +3,6 @@ import net.rcarz.jiraclient.BasicCredentials
 import net.rcarz.jiraclient.Issue
 import net.rcarz.jiraclient.JiraClient
 import net.rcarz.jiraclient.JiraException
-import org.apache.commons.cli.*
 
 import java.util.logging.Logger
 
@@ -23,6 +22,7 @@ class CommitNoteParser
             j longOpt: 'jiraUrl', args: 1, 'JIRA URL'
             ju longOpt: 'jiraUser', args: 1, 'JIRA username'
             jp longOpt: 'jiraPass', args: 1, 'JIRA password'
+            ot longOpt: 'outputType', args: 1, "Output results as 'markdown' or 'json'"
         }
 
         def options = cli.parse(args)
@@ -38,7 +38,7 @@ class CommitNoteParser
             return
         }
 
-        app.getJiraIssuesAndCommits(new ParserOptions(
+        def issues = app.getJiraIssuesAndCommits(new ParserOptions(
                 repoUrl: options.u,
                 firstTag: options.f,
                 lastTag: options.l,
@@ -46,6 +46,18 @@ class CommitNoteParser
                 jiraUser: options.ju,
                 jiraPass: options.jp
         ))
+
+        String output
+        if (options.ot == "json") {
+            output = new JSONOutput(parentIssues: issues)
+        }
+        else if (options.ot == "markdown") {
+            output = new MarkdownOutput(parentIssues: issues, jiraUrl: options.ju)
+        }
+
+        if (output) {
+            new File("changelog.$options.ot") << output
+        }
     }
 
     /**
