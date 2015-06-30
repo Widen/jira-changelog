@@ -1,11 +1,13 @@
 package com.widen.changelog
 
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 
-@ToString
 /**
  * Represents one parsed git commit message.
  */
+@ToString
+@EqualsAndHashCode
 class CommitMessage {
     String author
     String body

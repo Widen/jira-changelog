@@ -100,7 +100,7 @@ class CommitNoteParser
         return new File(tempDir, repoName).path
     }
 
-    private List<String> getRawLogs(firstTag, lastTag, tempRepoLocation) {
+    List<String> getRawLogs(firstTag, lastTag, tempRepoLocation) {
         executeCmd(["bash", "-c", "git --no-pager log --no-merges --pretty=format:HASH:%H%nAUTHOR:%an%nSUBJECT:%s%nBODY:%b%n$COMMIT_DELIMITER $lastTag..$firstTag > jira-changelog.txt"], tempRepoLocation)
         return new File(tempRepoLocation + '/jira-changelog.txt').text.split(COMMIT_DELIMITER) as List
     }
@@ -135,16 +135,21 @@ class CommitNoteParser
                 if (bodyIds) {
                     ids.addAll(bodyIds)
                 }
+                if (body != null && body.length() == 0) {
+                    body = null
+                }
 
-                parsedMessages << new CommitMessage(
-                        hash: matcher[0][1],
-                        author: matcher[0][2],
-                        type: matcher[0][3],
-                        module: matcher[0][4],
-                        subject: subject,
-                        body: body,
-                        jiraCases: ids
-                )
+                if (!ids.empty) {
+                    parsedMessages << new CommitMessage(
+                            hash: matcher[0][1],
+                            author: matcher[0][2],
+                            type: matcher[0][3],
+                            module: matcher[0][4],
+                            subject: subject,
+                            body: body,
+                            jiraCases: ids
+                    )
+                }
             }
         }
 
@@ -161,7 +166,7 @@ class CommitNoteParser
             ids = matcher[0][2].split(/\s+/) as Set
         }
 
-        return [matcher[0][1], ids]
+        return [matcher[0][1].trim(), ids]
     }
 
     def parseCommitBody(String body)
@@ -180,7 +185,7 @@ class CommitNoteParser
             ids = matcher[0][2].split(/\s+|\n+/) as Set
         }
 
-        return [matcher[0][1], ids]
+        return [matcher[0][1].trim(), ids]
     }
 
     List<ParentJiraIssue> getJiraCases(List<CommitMessage> commitMessages, String url, String user, String pass) {
