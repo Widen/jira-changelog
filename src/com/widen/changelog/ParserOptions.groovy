@@ -15,4 +15,5 @@ class ParserOptions {
     String jiraUrl
     String jiraUser
     String jiraPass
+    File repoLocation
 }

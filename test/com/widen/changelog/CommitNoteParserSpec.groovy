@@ -14,7 +14,7 @@ class CommitNoteParserSpec extends Specification {
         System.setProperty("java.io.tmpdir", tempDir);
 
         then:
-        commitNoteParser.cloneRepo(gitUrl) == clonedRepoPath
+        commitNoteParser.cloneRepo(gitUrl).path == clonedRepoPath
 
         where:
         gitUrl                                              | tempDir | clonedRepoPath

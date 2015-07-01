@@ -19,6 +19,7 @@ class CommitNoteParser
             f longOpt: 'firstTag', args: 1, 'First tag in changelog range'
             l longOpt: 'lastTag', args: 1, 'Last tag in changelog range'
             u longOpt: 'repoUrl', args: 1, 'Git repository URL'
+            d longOpt: 'repoDir', args: 1, 'Git repository directory - overrides URL option'
             j longOpt: 'jiraUrl', args: 1, 'JIRA URL'
             ju longOpt: 'jiraUser', args: 1, 'JIRA username'
             jp longOpt: 'jiraPass', args: 1, 'JIRA password'
@@ -44,6 +45,9 @@ class CommitNoteParser
                 jiraUser: options.ju,
                 jiraPass: options.jp
         )
+        if (options.d) {
+            parserOptions.repoLocation = new File(options.d)
+        }
 
         def issues = app.getJiraIssuesAndCommits(parserOptions)
 
@@ -76,12 +80,17 @@ class CommitNoteParser
      * @return List of all top-level issues (not epics) and their associated commits
      */
     public List<ParentJiraIssue> getJiraIssuesAndCommits(ParserOptions options) {
-        String tempRepoLocation
+        File repoLocation
         try {
-            tempRepoLocation = cloneRepo(options.repoUrl)
+            if (options.repoLocation) {
+                repoLocation = options.repoLocation
+            }
+            else {
+                repoLocation = cloneRepo(options.repoUrl)
+            }
 
-            LOGGER.info("gathering commit messages at repo cloned to $tempRepoLocation...")
-            List<String> totalCommits = getRawLogs(options.firstTag, options.lastTag, tempRepoLocation)
+            LOGGER.info("gathering commit messages at repo cloned to $repoLocation...")
+            List<String> totalCommits = getRawLogs(options.firstTag, options.lastTag, repoLocation)
             LOGGER.info("...gathered $totalCommits.size total commits")
 
             LOGGER.info("parsing $totalCommits.size commit messages...")
@@ -98,13 +107,14 @@ class CommitNoteParser
             er.printStackTrace()
         }
         finally {
-            if (tempRepoLocation) {
-                new File(tempRepoLocation).deleteDir()
+            // only delete the repo if _we_ created it
+            if (repoLocation && !options.repoLocation) {
+                repoLocation.deleteDir()
             }
         }
     }
 
-    String cloneRepo(String url) {
+    File cloneRepo(String url) {
         String tempDir = System.getProperty("java.io.tmpdir");
         def repoMatcher = url =~ /^(?:git@|https:\/\/).*\/(.+)\.git$/
 
@@ -118,19 +128,19 @@ class CommitNoteParser
         tempRepo.deleteDir()
 
         LOGGER.info("cloning $repoName...")
-        executeCmd("git clone $url $repoName", tempDir)
+        executeCmd("git clone $url $repoName", new File(tempDir))
         LOGGER.info("...cloned $repoName")
 
-        return tempRepo.path
+        return tempRepo
     }
 
-    List<String> getRawLogs(firstTag, lastTag, tempRepoLocation) {
+    List<String> getRawLogs(String firstTag, String lastTag, File tempRepoLocation) {
         return executeCmd("git --no-pager log --no-merges --pretty=format:HASH:%H%nAUTHOR:%an%nSUBJECT:%s%nBODY:%b%n$COMMIT_DELIMITER $lastTag..$firstTag", tempRepoLocation, COMMIT_DELIMITER)
     }
 
-    List<String> executeCmd(def cmd, String workingDir, String delim="\\n") {
+    List<String> executeCmd(String cmd, File workingDir, String delim="\\n") {
         LOGGER.info("Executing command: $cmd")
-        def proc = cmd.execute(null, new File(workingDir))
+        def proc = cmd.execute(null, workingDir)
         return proc.getText().split(delim)
     }
 
