@@ -9,7 +9,12 @@ import net.rcarz.jiraclient.Issue
  */
 @ToString
 @EqualsAndHashCode
-class ParentJiraIssue {
+class ParentJiraIssue implements Comparable<ParentJiraIssue> {
     List<CommitMessage> commitMessages = []
     Issue issue
+
+    @Override
+    public int compareTo(ParentJiraIssue other) {
+        return issue.key.compareToIgnoreCase(other.issue.key)
+    }
 }

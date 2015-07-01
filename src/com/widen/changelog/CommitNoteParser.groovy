@@ -27,8 +27,6 @@ class CommitNoteParser
 
         def options = cli.parse(args)
 
-        // TODO assume lack of f/t options indicates: -f LATEST_TAG -t SECOND_LATEST_TAG
-
         if (!options) {
             return
         }
@@ -47,16 +45,31 @@ class CommitNoteParser
                 jiraPass: options.jp
         ))
 
-        String output
-        if (options.ot == "json") {
-            output = new JsonOutput(parentIssues: issues)
-        }
-        else if (options.ot == "markdown") {
-            output = new MarkdownOutput(parentIssues: issues, jiraUrl: options.j)
-        }
+        if (!issues.empty) {
+            String output, extension
+            if (options.ot == "json") {
+                LOGGER.info("Writing results to changelog.json file...")
+                output = new JsonOutput(parentIssues: issues)
+                extension = "json"
+            }
+            else if (options.ot == "markdown") {
+                LOGGER.info("Writing results to changelog.md file...")
 
-        if (output) {
-            new File("changelog.$options.ot") << output
+                output = new MarkdownOutput(
+                        parentIssues: issues,
+                        jiraUrl: options.j,
+                        startingTag: options.f,
+                        endingTag: options.l
+                )
+
+                extension = "md"
+            }
+
+            def outputFile = new File("changelog.$extension")
+            if (outputFile.exists()) {
+                outputFile.delete()
+            }
+            outputFile << output
         }
     }
 
