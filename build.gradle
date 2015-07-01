@@ -21,7 +21,7 @@ configurations.all {
         compile group: 'net.rcarz', name: 'jira-client', version: '0.5'
 
         testCompile group: 'org.spockframework', name: 'spock-core', version: '1.0-groovy-2.4'
-        runtime group: 'cglib', name: 'cglib-nodep', version: '3.1'
+        testRuntime group: 'cglib', name: 'cglib-nodep', version: '3.1'
     }
 }
 
@@ -50,4 +50,10 @@ sourceSets {
         groovy.srcDirs = files('test')
         resources.srcDirs = files('test')
     }
+}
+
+task run(type: JavaExec) {
+    classpath sourceSets.main.runtimeClasspath
+    main = "com.widen.changelog.CommitNoteParser"
+    args Eval.me(appArgs)
 }

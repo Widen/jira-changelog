@@ -1,7 +1,9 @@
 package com.widen.changelog
 
 import groovy.json.JsonBuilder
+import groovy.transform.TupleConstructor
 
+@TupleConstructor
 class JsonOutput {
     List<ParentJiraIssue> parentIssues = []
 

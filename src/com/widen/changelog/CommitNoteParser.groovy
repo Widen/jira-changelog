@@ -36,14 +36,16 @@ class CommitNoteParser
             return
         }
 
-        def issues = app.getJiraIssuesAndCommits(new ParserOptions(
+        def parserOptions = new ParserOptions(
                 repoUrl: options.u,
                 firstTag: options.f,
                 lastTag: options.l,
                 jiraUrl: options.j,
                 jiraUser: options.ju,
                 jiraPass: options.jp
-        ))
+        )
+
+        def issues = app.getJiraIssuesAndCommits(parserOptions)
 
         if (!issues.empty) {
             String output, extension
@@ -54,14 +56,7 @@ class CommitNoteParser
             }
             else if (options.ot == "markdown") {
                 LOGGER.info("Writing results to changelog.md file...")
-
-                output = new MarkdownOutput(
-                        parentIssues: issues,
-                        jiraUrl: options.j,
-                        startingTag: options.f,
-                        endingTag: options.l
-                )
-
+                output = new MarkdownOutput(parentIssues: issues, options: parserOptions)
                 extension = "md"
             }
 
@@ -118,11 +113,15 @@ class CommitNoteParser
         }
 
         String repoName = repoMatcher[0][1]
+
+        File tempRepo = new File(tempDir, repoName)
+        tempRepo.deleteDir()
+
         LOGGER.info("cloning $repoName...")
         executeCmd("git clone $url", tempDir)
         LOGGER.info("...cloned $repoName")
 
-        return new File(tempDir, repoName).path
+        return tempRepo.path
     }
 
     List<String> getRawLogs(firstTag, lastTag, tempRepoLocation) {
