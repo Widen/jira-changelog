@@ -105,6 +105,7 @@ class CommitNoteParser
     }
 
     String cloneRepo(String url) {
+        String tempDir = System.getProperty("java.io.tmpdir");
         def repoMatcher = url =~ /^(?:git@|https:\/\/).*\/(.+)\.git$/
 
         if (!repoMatcher) {
@@ -113,11 +114,11 @@ class CommitNoteParser
 
         String repoName = repoMatcher[0][1]
 
-        File tempRepo = new File(repoName)
+        File tempRepo = new File(tempDir, repoName)
         tempRepo.deleteDir()
 
         LOGGER.info("cloning $repoName...")
-        executeCmd("git clone $url")
+        executeCmd("git clone $url", tempDir)
         LOGGER.info("...cloned $repoName")
 
         return tempRepo.path
@@ -127,16 +128,9 @@ class CommitNoteParser
         return executeCmd("git --no-pager log --no-merges --pretty=format:HASH:%H%nAUTHOR:%an%nSUBJECT:%s%nBODY:%b%n$COMMIT_DELIMITER $lastTag..$firstTag", tempRepoLocation, COMMIT_DELIMITER)
     }
 
-    List<String> executeCmd(def cmd, String workingDir=null, String delim="\\n") {
+    List<String> executeCmd(def cmd, String workingDir, String delim="\\n") {
         LOGGER.info("Executing command: $cmd")
-        def proc
-
-        if (workingDir) {
-            proc = cmd.execute(null, new File(workingDir))
-        }
-        else {
-            proc = cmd.execute()
-        }
+        def proc = cmd.execute(null, new File(workingDir))
         return proc.getText().split(delim)
     }
 
