@@ -125,19 +125,13 @@ class CommitNoteParser
     }
 
     List<String> getRawLogs(firstTag, lastTag, tempRepoLocation) {
-        executeCmd(["bash", "-c", "git --no-pager log --no-merges --pretty=format:HASH:%H%nAUTHOR:%an%nSUBJECT:%s%nBODY:%b%n$COMMIT_DELIMITER $lastTag..$firstTag > jira-changelog.txt"], tempRepoLocation)
-        return new File(tempRepoLocation + '/jira-changelog.txt').text.split(COMMIT_DELIMITER) as List
+        return executeCmd("git --no-pager log --no-merges --pretty=format:HASH:%H%nAUTHOR:%an%nSUBJECT:%s%nBODY:%b%n$COMMIT_DELIMITER $lastTag..$firstTag", tempRepoLocation, COMMIT_DELIMITER)
     }
 
     List<String> executeCmd(def cmd, String workingDir, String delim="\\n") {
         LOGGER.fine("Executing command: $cmd")
-        def sout = new StringBuilder(), serr = new StringBuilder()
-
         def proc = cmd.execute(null, new File(workingDir))
-        proc.consumeProcessOutput(sout, serr)
-        proc.waitForProcessOutput(sout, serr)
-        LOGGER.finer(sout.toString())
-        return sout.toString().split(delim) as List
+        return proc.getText().split(delim)
     }
 
     List<CommitMessage> parseCommits(List<String> rawCommits) {
