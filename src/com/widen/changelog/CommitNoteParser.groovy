@@ -118,7 +118,7 @@ class CommitNoteParser
         tempRepo.deleteDir()
 
         LOGGER.info("cloning $repoName...")
-        executeCmd("git clone $url", tempDir)
+        executeCmd("git clone $url $repoName", tempDir)
         LOGGER.info("...cloned $repoName")
 
         return tempRepo.path
