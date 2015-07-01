@@ -129,7 +129,7 @@ class CommitNoteParser
     }
 
     List<String> executeCmd(def cmd, String workingDir, String delim="\\n") {
-        LOGGER.fine("Executing command: $cmd")
+        LOGGER.info("Executing command: $cmd")
         def proc = cmd.execute(null, new File(workingDir))
         return proc.getText().split(delim)
     }
