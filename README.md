@@ -25,6 +25,14 @@ your changelogs from a shell script _or_ programmatically inside of a larger app
 - Java 7 or newer
 
 
+## Commit message syntax
+
+JIRA-Changelog will only be able to parse commit messages that follow the [angular commit message format](https://github.com/angular/angular.js/blob/master/CONTRIBUTING.md#commit).
+The JIRA issue keys must be included on their own line as part of the commit message body or footer. You may reference multiple
+JIRA issues in your commit, as long as each issue key is on its own line. Note that blank lines after the subject
+and body are _not_ required by this parser.
+
+
 ## Getting started
 
 1. Clone the repo or pull down the jar from maven central.
