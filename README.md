@@ -35,8 +35,8 @@ and body are _not_ required by this parser.
 
 ## Getting started
 
-1. Clone the repo or pull down the jar from maven central.
-2. Follow the command-line or API instructions below, depending on your intended use.
+1. Clone the repo.
+2. Follow the command-line or API instructions below, depending on your intended use. If you need to build a jar, simply run `gradlew jar`.
 
 
 ## Command-line
