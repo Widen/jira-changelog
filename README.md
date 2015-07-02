@@ -39,12 +39,20 @@ After you have cloned the repository, you can do simply accomplish this in one l
 
 `gradlew run -PappArgs='["-f", "{{FIRST_TAG}}", "-l", "{{LAST_TAG}}", "-u", "{{GIT_REPO_URL}}", "-j", "{{JIRA_URL}}", "-ju", "{{JIRA_API_USER}}", "-jp", "{{JIRA_API_PASSWORD}}", "-ot", "{{MARKDOWN_OR_JSON}}"]'`
 
+The above command will clone the git repo specified by the GIT_REPO_URL, and then delete the clone once the changelog
+has been generated. If you do not want JIRA-Changelog to do this, you can specify a directory that already contains
+the cloned git repo to examine by using the `-d` option. In that case, assuming your git repo has been cloned to
+"/code/repo", the command to generate a changelog will look slightly different:
+
+`gradlew run -PappArgs='["-f", "{{FIRST_TAG}}", "-l", "{{LAST_TAG}}", "-d", "/code/repo", "-j", "{{JIRA_URL}}", "-ju", "{{JIRA_API_USER}}", "-jp", "{{JIRA_API_PASSWORD}}", "-ot", "{{MARKDOWN_OR_JSON}}"]'`
+
 
 ### Options
 
 - `f`: First (most recent) tag in changelog range
-- `l`: Last (leaast recent) tag in changelog range
+- `l`: Last (least recent) tag in changelog range
 - `u`: Git repository URL
+- `d`: Git repository directory - overrides URL option
 - `j`: JIRA instance URL
 - `ju`: JIRA username
 - `jp`: JIRA password
@@ -67,7 +75,13 @@ import java.util.List;
 public class MyChangelogGenerator {
     public static void main(String[] args) {
         CommitNoteParser parser = new CommitNoteParser();
-        ParserOptions options = new ParserOptions("{{FIRST_TAG}}", "{{LAST_TAG}}", "{{GIT_URL}}", "{{JIRA_URL}}", "{{JIRA_API_USER}}", "{{JIRA_API_PASSWORD}}");
+        ParserOptions options = new ParserOptions()
+            .setFirstTag("{{FIRST_TAG}}")
+            .setLastTag("{{LAST_TAG}}")
+            .setRepoUrl("{{GIT_REPO_URL}}"
+            .setJiraUrl("{{JIRA_URL}}")
+            .setJiraUser("{{JIRA_API_USER}}")
+            .setJiraPass("{{JIRA_API_PASSWORD}}")
         List<ParentJiraIssue> issues = parser.getJiraIssuesAndCommits(options);
 
         MarkdownOutput markdown = new MarkdownOutput(issues, options);
@@ -78,6 +92,11 @@ public class MyChangelogGenerator {
     }
 }
 ```
+
+The above code will clone the git repo specified by the GIT_REPO_URL, and then delete the clone once the changelog
+has been generated. If you do not want JIRA-Changelog to do this, you can specify a directory that already contains
+the cloned git repo to examine by instead calling `setGitDir(File)`, passing the filesystem location of the cloned git repo.
+
 
 
 ## Tests

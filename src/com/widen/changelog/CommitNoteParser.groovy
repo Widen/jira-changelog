@@ -46,7 +46,7 @@ class CommitNoteParser
                 jiraPass: options.jp
         )
         if (options.d) {
-            parserOptions.repoLocation = new File(options.d)
+            parserOptions.repoDir = new File(options.d)
         }
 
         def issues = app.getJiraIssuesAndCommits(parserOptions)
@@ -80,17 +80,17 @@ class CommitNoteParser
      * @return List of all top-level issues (not epics) and their associated commits
      */
     public List<ParentJiraIssue> getJiraIssuesAndCommits(ParserOptions options) {
-        File repoLocation
+        File repoDir
         try {
-            if (options.repoLocation) {
-                repoLocation = options.repoLocation
+            if (options.repoDir) {
+                repoDir = options.repoDir
             }
             else {
-                repoLocation = cloneRepo(options.repoUrl)
+                repoDir = cloneRepo(options.repoUrl)
             }
 
-            LOGGER.info("gathering commit messages at repo cloned to $repoLocation...")
-            List<String> totalCommits = getRawLogs(options.firstTag, options.lastTag, repoLocation)
+            LOGGER.info("gathering commit messages at repo cloned to $repoDir...")
+            List<String> totalCommits = getRawLogs(options.firstTag, options.lastTag, repoDir)
             LOGGER.info("...gathered $totalCommits.size total commits")
 
             LOGGER.info("parsing $totalCommits.size commit messages...")
@@ -108,8 +108,8 @@ class CommitNoteParser
         }
         finally {
             // only delete the repo if _we_ created it
-            if (repoLocation && !options.repoLocation) {
-                repoLocation.deleteDir()
+            if (repoDir && !options.repoDir) {
+                repoDir.deleteDir()
             }
         }
     }
