@@ -107,4 +107,3 @@ To run the tests, simple execute `gradlew test`.
 ## License
 
 JIRA-Changelog is MIT licensed, and is provided free of charge by [Widen](http://widen.com).  
-![Widen](https://ssl.smartimagecdn.com/img/ve5m5p/200px/Widen-Avatar.jpeg)
