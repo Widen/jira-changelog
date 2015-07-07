@@ -45,14 +45,18 @@ The simplest way to generate a changelog from the command-line is to pull down t
 
 After you have cloned the repository, you can do simply accomplish this in one line:
 
-`gradlew run -PappArgs='["-f", "{{FIRST_TAG}}", "-l", "{{LAST_TAG}}", "-u", "{{GIT_REPO_URL}}", "-j", "{{JIRA_URL}}", "-ju", "{{JIRA_API_USER}}", "-jp", "{{JIRA_API_PASSWORD}}", "-ot", "{{MARKDOWN_OR_JSON}}"]'`
+```shell
+gradlew run -PappArgs='["-f", "{{FIRST_TAG}}", "-l", "{{LAST_TAG}}", "-u", "{{GIT_REPO_URL}}", "-j", "{{JIRA_URL}}", "-ju", "{{JIRA_API_USER}}", "-jp", "{{JIRA_API_PASSWORD}}", "-ot", "{{MARKDOWN_OR_JSON}}"]'
+```
 
 The above command will clone the git repo specified by the GIT_REPO_URL, and then delete the clone once the changelog
 has been generated. If you do not want JIRA-Changelog to do this, you can specify a directory that already contains
 the cloned git repo to examine by using the `-d` option. In that case, assuming your git repo has been cloned to
 "/code/repo", the command to generate a changelog will look slightly different:
 
-`gradlew run -PappArgs='["-f", "{{FIRST_TAG}}", "-l", "{{LAST_TAG}}", "-d", "/code/repo", "-j", "{{JIRA_URL}}", "-ju", "{{JIRA_API_USER}}", "-jp", "{{JIRA_API_PASSWORD}}", "-ot", "{{MARKDOWN_OR_JSON}}"]'`
+```shell
+gradlew run -PappArgs='["-f", "{{FIRST_TAG}}", "-l", "{{LAST_TAG}}", "-d", "/code/repo", "-j", "{{JIRA_URL}}", "-ju", "{{JIRA_API_USER}}", "-jp", "{{JIRA_API_PASSWORD}}", "-ot", "{{MARKDOWN_OR_JSON}}"]'
+```
 
 
 ### Options
