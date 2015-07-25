@@ -73,6 +73,12 @@ BODY:Due to an attempt to PROJ-123 access the scope of an ng-repeat item in prod
 PROJ-2413
 PROJ-3142
 
+""",
+                """HASH:b7bff7f8e34c29c68478gd8d9187239532b31ea1
+AUTHOR:Bob Weir
+SUBJECT:fix(dng): PROJ-3002 always recalc aspect ratio from 160px preview after it is generated to fix dng crop issues, among many other aspect ratio problems
+BODY:
+
 """
         ]
 
@@ -81,7 +87,7 @@ PROJ-3142
         List<CommitMessage> parsedCommits = commitNoteParser.parseCommits(rawCommits)
 
         then:
-        parsedCommits.size() == 5
+        parsedCommits.size() == 6
 
         parsedCommits == [
                 new CommitMessage(
@@ -131,6 +137,16 @@ PROJ-3142
                         jiraCases: ["PROJ-3142", "PROJ-2413"],
                         module: "hover-menu",
                         subject: "hover over category menu item is a no-op",
+                        type: "fix"
+                ),
+
+                new CommitMessage(
+                        author: "Bob Weir",
+                        body: null,
+                        hash: "b7bff7f8e34c29c68478gd8d9187239532b31ea1",
+                        jiraCases: ["PROJ-3002"],
+                        module: "dng",
+                        subject: "always recalc aspect ratio from 160px preview after it is generated to fix dng crop issues, among many other aspect ratio problems",
                         type: "fix"
                 )
         ]

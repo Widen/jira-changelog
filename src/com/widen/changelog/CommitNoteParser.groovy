@@ -187,14 +187,23 @@ class CommitNoteParser
     def parseCommitSubject(String subject)
     {
         Set<String> ids
+        String message
 
-        def matcher = subject.replaceAll("\\n", "").trim() =~ /^(.*?)([A-Z0-9_]+-\d+)?$/
+        def startingIssueKey = subject.replaceAll("\\n", "").trim() =~ /^([A-Z0-9_]+-\d+)(.*?)$/
+        def maybeEndingIssueKey = subject.replaceAll("\\n", "").trim() =~ /^(.*?)([A-Z0-9_]+-\d+)?$/
 
-        if (matcher[0][2]) {
-            ids = matcher[0][2].split(/\s+/) as Set
+        if (startingIssueKey.matches()) {
+            ids = startingIssueKey[0][1].split(/\s+/) as Set
+            message = startingIssueKey[0][2].trim()
+        }
+        else {
+            if (maybeEndingIssueKey[0][2]) {
+                ids = maybeEndingIssueKey[0][2].split(/\s+/) as Set
+            }
+            message = maybeEndingIssueKey[0][1].trim()
         }
 
-        return [matcher[0][1].trim(), ids]
+        return [message, ids]
     }
 
     def parseCommitBody(String body)
