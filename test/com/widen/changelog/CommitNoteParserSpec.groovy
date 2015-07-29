@@ -79,7 +79,22 @@ AUTHOR:Bob Weir
 SUBJECT:fix(dng): PROJ-3002 always recalc aspect ratio from 160px preview after it is generated to fix dng crop issues, among many other aspect ratio problems
 BODY:
 
+""",
+                """HASH:d7f41f87188407b1282f0b2e41c7890894feb0cb
+AUTHOR:Trey Anastasio
+SUBJECT:feat(comments): Going to see how the JIRA comment directive is handled
+BODY:PROJ-1980 #comment hello JIRA comment section!
+
+""",
+
+                """HASH:3cacec56bb9d967bff83a6a5f09bc1c218b539c5
+AUTHOR:Mike Gordon
+SUBJECT:feat(comments): More JIRA directive handling tests
+BODY:I'm doing stuff here!
+PROJ-2012 #close All done
+
 """
+
         ]
 
         when:
@@ -87,7 +102,7 @@ BODY:
         List<CommitMessage> parsedCommits = commitNoteParser.parseCommits(rawCommits)
 
         then:
-        parsedCommits.size() == 6
+        parsedCommits.size() == 8
 
         parsedCommits == [
                 new CommitMessage(
@@ -148,6 +163,26 @@ BODY:
                         module: "dng",
                         subject: "always recalc aspect ratio from 160px preview after it is generated to fix dng crop issues, among many other aspect ratio problems",
                         type: "fix"
+                ),
+
+                new CommitMessage(
+                        author: "Trey Anastasio",
+                        body: "#comment hello JIRA comment section!",
+                        hash: "d7f41f87188407b1282f0b2e41c7890894feb0cb",
+                        jiraCases: ["PROJ-1980"],
+                        module: "comments",
+                        subject: "Going to see how the JIRA comment directive is handled",
+                        type: "feat"
+                ),
+
+                new CommitMessage(
+                        author: "Mike Gordon",
+                        body: "I'm doing stuff here! #close All done",
+                        hash: "3cacec56bb9d967bff83a6a5f09bc1c218b539c5",
+                        jiraCases: ["PROJ-2012"],
+                        module: "comments",
+                        subject: "More JIRA directive handling tests",
+                        type: "feat"
                 )
         ]
     }

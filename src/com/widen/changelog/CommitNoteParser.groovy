@@ -209,6 +209,7 @@ class CommitNoteParser
     def parseCommitBody(String body)
     {
         Set<String> ids
+        String parsedBody = ""
 
         body = body.trim()
 
@@ -216,13 +217,20 @@ class CommitNoteParser
             return [null, null]
         }
 
-        def matcher = body =~ /(?s)^(.*?)((?:[A-Z0-9]+\-\d+\n?)+)?$/
+        def matcher = body =~ /(?s)^(.*?)((?:[A-Z0-9]+\-\d+\n?)+)?(\s#.+)?$/
 
         if (matcher[0][2]) {
             ids = matcher[0][2].split(/\s+|\n+/) as Set
         }
 
-        return [matcher[0][1].trim(), ids]
+        if (matcher[0][1]) {
+            parsedBody = matcher[0][1]
+        }
+        if (matcher[0][3]) {
+            parsedBody += matcher[0][3]
+        }
+
+        return [parsedBody.trim().replaceAll("[\n\r]", ""), ids]
     }
 
     List<ParentJiraIssue> getJiraCases(List<CommitMessage> commitMessages, String url, String user, String pass) {
