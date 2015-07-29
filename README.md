@@ -1,3 +1,7 @@
+JIRA-Changelog
+===============
+[![Build Status](https://travis-ci.org/Widen/jira-changelog.svg?branch=master)](https://travis-ci.org/Widen/jira-changelog)
+
 # Generate a changelog using git commits and JIRA issues
 
 JIRA-Changelog will parse all git commits between two tags, lookup the associated JIRA issues, and generate a 
