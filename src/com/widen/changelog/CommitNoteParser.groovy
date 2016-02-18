@@ -148,7 +148,7 @@ class CommitNoteParser
         List<CommitMessage> parsedMessages = []
 
         rawCommits.each { String rawCommit ->
-            def matcher = rawCommit =~ /(?s)HASH:(.+)\nAUTHOR:(.+)\nSUBJECT:(feat|fix|docs|style|refactor|perf|test|chore|customer)\((.+)\):\s*(.+)\nBODY:(.*)/
+            def matcher = rawCommit =~ /(?s)HASH:(.+)\nAUTHOR:(.+)\nSUBJECT:(.*)\((.+)\):\s*(.+)\nBODY:(.*)/
             if (matcher) {
                 String subject, body
                 Set<String> subjectIds, bodyIds
