@@ -140,8 +140,19 @@ class CommitNoteParser
 
     List<String> executeCmd(String cmd, File workingDir, String delim="\\n") {
         LOGGER.info("Executing command: $cmd")
+
         def proc = cmd.execute(null, workingDir)
-        return proc.getText().split(delim)
+        def sout = new StringBuilder()
+        def serr = new StringBuilder()
+
+        proc.consumeProcessOutput(sout, serr)
+        proc.waitForOrKill(10000)
+
+        if (serr.length() > 0) {
+            LOGGER.severe("Errors detected during commit parsing: $serr")
+        }
+
+        return sout.toString().split(delim)
     }
 
     List<CommitMessage> parseCommits(List<String> rawCommits) {
