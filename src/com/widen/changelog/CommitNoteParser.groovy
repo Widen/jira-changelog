@@ -228,7 +228,7 @@ class CommitNoteParser
             return [null, null]
         }
 
-        def matcher = body =~ /(?s)^(.*?)((?:[A-Z0-9]+\-\d+\n?)+)?(\s#.+)?$/
+        def matcher = body =~ /(?s)^(.*?)((?:[A-Z0-9]+\-\d+\n?)+)?(\s#\D+)?$/
 
         if (matcher[0][2]) {
             ids = matcher[0][2].split(/\s+|\n+/) as Set

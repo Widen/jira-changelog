@@ -93,8 +93,16 @@ SUBJECT:feat(comments): More JIRA directive handling tests
 BODY:I'm doing stuff here!
 PROJ-2012 #close All done
 
-"""
+""",
+                """HASH:1529502f549827fef196d2618158182ac78e9bbe
+AUTHOR:Ray Nicholus
+SUBJECT:feat(react-component): <ReactComponent /> (#156)
+BODY:Created a new <ReactComponent /> connected to <SomeOtherComponent />.
+Also, <FooBar /> and its related files were moved to the common package.
+Did other stuff in #123.
+PROJ-5691
 
+"""
         ]
 
         when:
@@ -102,7 +110,7 @@ PROJ-2012 #close All done
         List<CommitMessage> parsedCommits = commitNoteParser.parseCommits(rawCommits)
 
         then:
-        parsedCommits.size() == 8
+        parsedCommits.size() == 9
 
         parsedCommits == [
                 new CommitMessage(
@@ -182,6 +190,16 @@ PROJ-2012 #close All done
                         jiraCases: ["PROJ-2012"],
                         module: "comments",
                         subject: "More JIRA directive handling tests",
+                        type: "feat"
+                ),
+
+                new CommitMessage(
+                        author: "Ray Nicholus",
+                        body: "Created a new <ReactComponent /> connected to <SomeOtherComponent />.Also, <FooBar /> and its related files were moved to the common package.Did other stuff in #123.",
+                        hash: "1529502f549827fef196d2618158182ac78e9bbe",
+                        jiraCases: ["PROJ-5691"],
+                        module: "react-component",
+                        subject: "<ReactComponent /> (#156)",
                         type: "feat"
                 )
         ]
